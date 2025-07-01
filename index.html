@@ -181,7 +181,13 @@ Now, provide your analysis of the user's image in this exact format.
                 }],
             };
 
-            const apiKey = "";
+            // IMPORTANT: This now reads the API key from environment variables for deployment.
+            const apiKey = process.env.REACT_APP_GEMINI_API_KEY || "";
+            
+            if (!apiKey) {
+                throw new Error("API Key is missing. Please set up the REACT_APP_GEMINI_API_KEY environment variable.");
+            }
+
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             const response = await fetch(apiUrl, {
