@@ -43,7 +43,7 @@ export default function App() {
 
         {/* Footer */}
         <footer className="text-center mt-12 text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} AdInsight. For Stratuscast Phils., Inc. Internal Use Only. Powered by Gemini.</p>
+          <p>&copy; {new Date().getFullYear()} AdInsight. For Internal Use of Stratuscast Phils., Inc. Powered by Gemini.</p>
         </footer>
       </div>
     </div>
@@ -115,46 +115,41 @@ const AdAnalyzer = () => {
     }, []);
 
     const generatePrompt = () => {
-        return `
-Analyze the provided ad image. Your response MUST be a single, valid JSON object and nothing else.
-- Do NOT include any text, explanations, or markdown formatting like \`\`\`json before or after the JSON object.
-- Ensure all strings are enclosed in double quotes.
-- Ensure all elements in an array are separated by commas.
-- Do NOT use trailing commas.
+        return `As an expert marketing and advertising analyst specializing in visual media, analyze the provided ad image. Your goal is to predict its performance in a digital marketing campaign. Evaluate its key components based on established advertising principles (clarity, emotional appeal, branding, call-to-action). Provide a comprehensive analysis in a structured JSON format.
 
-Your response must strictly follow this exact JSON structure:
-{
-    "overallScore": 88,
-    "oneLiner": "A concise summary of the ad's core message.",
-    "strengths": ["Clear product focus", "Vibrant color palette"],
-    "improvements": ["CTA could be more prominent", "Logo placement is suboptimal"],
-    "analysis": {
-        "colorPalette": {
-            "vibe": "Energetic and Vibrant",
-            "recommendation": "The colors effectively grab attention."
-        },
-        "subjectAndComposition": {
-            "focus": "The main product",
-            "type": "Product-only shot",
-            "recommendation": "Consider adding a human element."
-        },
-        "typographyAndText": {
-            "clarity": "Excellent",
-            "hierarchy": "Yes",
-            "recommendation": "No changes needed."
-        },
-        "brandIntegration": {
-            "logoVisibility": "Prominent",
-            "recommendation": "Branding is clear and effective."
-        },
-        "callToAction": {
-            "clarity": "Clear",
-            "recommendation": "Make the button a contrasting color."
+        The JSON response must strictly follow this schema. Do not output any text before or after the JSON object.
+
+        {
+            "overallScore": 85,
+            "oneLiner": "A single, concise sentence summarizing the ad's core message and appeal.",
+            "strengths": ["An array of 2-4 strings, each detailing a specific positive element of the ad that contributes to its potential success."],
+            "improvements": ["An array of 2-4 strings, each providing a constructive, actionable suggestion for enhancing the ad's effectiveness."],
+            "analysis": {
+                "colorPalette": {
+                    "vibe": "Describe the mood created by the colors (e.g., 'Energetic and Vibrant', 'Calm and Trustworthy', 'Luxurious and Sophisticated').",
+                    "recommendation": "A brief recommendation regarding the color choices."
+                },
+                "subjectAndComposition": {
+                    "focus": "Identify the main focal point (e.g., 'Product in use', 'Human model's face', 'Brand logo').",
+                    "type": "Classify the subject (e.g., 'Product-only', 'Human Model', 'Lifestyle Scene', 'Abstract Graphic').",
+                    "recommendation": "Suggest improvements for the subject matter or composition."
+                },
+                "typographyAndText": {
+                    "clarity": "Rate the text's readability (e.g., 'Excellent', 'Good', 'Needs Improvement').",
+                    "hierarchy": "Does the text have a clear visual hierarchy (headline, body, CTA)? Yes or No.",
+                    "recommendation": "Suggestions for font choice, size, or placement."
+                },
+                "brandIntegration": {
+                    "logoVisibility": "How visible is the brand logo? (e.g., 'Prominent', 'Subtle', 'Not Visible').",
+                    "recommendation": "Comment on the effectiveness of the branding."
+                },
+                "callToAction": {
+                    "clarity": "How clear is the call to action? (e.g., 'Very Clear', 'Implied', 'Missing').",
+                    "recommendation": "How to make the CTA more compelling or clear."
+                }
+            }
         }
-    }
-}
-Now, provide your analysis of the user's image in this exact format.
-`;
+        `;
     };
 
 
@@ -203,19 +198,9 @@ Now, provide your analysis of the user's image in this exact format.
             const result = await response.json();
             
             if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
-                const rawText = result.candidates[0].content.parts[0].text;
-                const jsonText = rawText.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-
-                try {
-                    const parsedJson = JSON.parse(jsonText);
-                    setAnalysisResult(parsedJson);
-                } catch (parseError) {
-                    console.error("--- JSON PARSE FAILED ---");
-                    console.error("Error:", parseError.message);
-                    console.error("Raw text received from API:", jsonText);
-                    console.error("--------------------------");
-                    throw new Error("The AI returned a response in an invalid format. Please check the browser console for more details.");
-                }
+                const jsonText = result.candidates[0].content.parts[0].text.trim().replace(/```json/g, '').replace(/```/g, '');
+                const parsedJson = JSON.parse(jsonText);
+                setAnalysisResult(parsedJson);
             } else {
                 console.error("Unexpected API response structure:", result);
                 throw new Error("Failed to get a valid analysis from the AI. The response format was unexpected.");
@@ -233,7 +218,7 @@ Now, provide your analysis of the user's image in this exact format.
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column: Uploader and Image Preview */}
             <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200/80 space-y-4">
-                <div>
+                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 mb-4">1. Configure & Upload</h2>
                      <div className="mb-4">
                         <label htmlFor="api-key" className="block text-sm font-medium text-slate-700 mb-1">Gemini API Key</label>
