@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { UploadCloud, FileImage, Palette, Type, Users, Lightbulb, CheckCircle, XCircle, Star, BarChart2 } from 'lucide-react';
+import { UploadCloud, FileImage, Palette, Type, Users, Lightbulb, CheckCircle, XCircle, Star, BarChart2, MessageSquare, Monitor } from 'lucide-react';
 
 // --- Main App Component ---
 export default function App() {
@@ -73,7 +73,17 @@ const AdAnalyzer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [apiKey, setApiKey] = useState('');
+    const [platform, setPlatform] = useState('social');
+    
+    // Initialize API key from localStorage or an empty string
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('geminiApiKey') || '');
+
+    // Handle API key changes and save to localStorage
+    const handleApiKeyChange = (e) => {
+        const newKey = e.target.value;
+        setApiKey(newKey);
+        localStorage.setItem('geminiApiKey', newKey);
+    };
 
     const handleImageChange = (file) => {
         if (file && file.type.startsWith('image/')) {
@@ -114,39 +124,28 @@ const AdAnalyzer = () => {
         }
     }, []);
 
-    const generatePrompt = () => {
-        return `As an expert marketing and advertising analyst specializing in visual media, analyze the provided ad image. Your goal is to predict its performance in a digital marketing campaign. Evaluate its key components based on established advertising principles (clarity, emotional appeal, branding, call-to-action). Provide a comprehensive analysis in a structured JSON format.
+    const generatePrompt = (selectedPlatform) => {
+        let platformContext = '';
+        if (selectedPlatform === 'social') {
+            platformContext = "The ad is for a social media feed (e.g., Facebook, Instagram). Prioritize analysis on thumb-stopping power, engagement potential, and clarity on a mobile device.";
+        } else {
+            platformContext = "The ad is a display/banner ad (e.g., Google Display Network). Prioritize analysis on its ability to grab attention instantly, the clarity of a single call-to-action, and effectiveness in a small format.";
+        }
 
-        The JSON response must strictly follow this schema. Do not output any text before or after the JSON object.
+        return `As an expert marketing analyst, analyze the provided ad image. ${platformContext} Your response must be a valid JSON object.
 
+        The JSON response must strictly follow this schema:
         {
             "overallScore": 85,
             "oneLiner": "A single, concise sentence summarizing the ad's core message and appeal.",
-            "strengths": ["An array of 2-4 strings, each detailing a specific positive element of the ad that contributes to its potential success."],
-            "improvements": ["An array of 2-4 strings, each providing a constructive, actionable suggestion for enhancing the ad's effectiveness."],
+            "strengths": ["An array of 2-4 strings detailing positive elements relevant to the platform."],
+            "improvements": ["An array of 2-4 strings with actionable suggestions relevant to the platform."],
             "analysis": {
-                "colorPalette": {
-                    "vibe": "Describe the mood created by the colors (e.g., 'Energetic and Vibrant', 'Calm and Trustworthy', 'Luxurious and Sophisticated').",
-                    "recommendation": "A brief recommendation regarding the color choices."
-                },
-                "subjectAndComposition": {
-                    "focus": "Identify the main focal point (e.g., 'Product in use', 'Human model's face', 'Brand logo').",
-                    "type": "Classify the subject (e.g., 'Product-only', 'Human Model', 'Lifestyle Scene', 'Abstract Graphic').",
-                    "recommendation": "Suggest improvements for the subject matter or composition."
-                },
-                "typographyAndText": {
-                    "clarity": "Rate the text's readability (e.g., 'Excellent', 'Good', 'Needs Improvement').",
-                    "hierarchy": "Does the text have a clear visual hierarchy (headline, body, CTA)? Yes or No.",
-                    "recommendation": "Suggestions for font choice, size, or placement."
-                },
-                "brandIntegration": {
-                    "logoVisibility": "How visible is the brand logo? (e.g., 'Prominent', 'Subtle', 'Not Visible').",
-                    "recommendation": "Comment on the effectiveness of the branding."
-                },
-                "callToAction": {
-                    "clarity": "How clear is the call to action? (e.g., 'Very Clear', 'Implied', 'Missing').",
-                    "recommendation": "How to make the CTA more compelling or clear."
-                }
+                "colorPalette": { "vibe": "string", "recommendation": "string" },
+                "subjectAndComposition": { "focus": "string", "type": "string", "recommendation": "string" },
+                "typographyAndText": { "clarity": "string", "hierarchy": "string", "recommendation": "string" },
+                "brandIntegration": { "logoVisibility": "string", "recommendation": "string" },
+                "callToAction": { "clarity": "string", "recommendation": "string" }
             }
         }
         `;
@@ -170,7 +169,7 @@ const AdAnalyzer = () => {
 
         try {
             const base64ImageData = image.split(',')[1];
-            const prompt = generatePrompt();
+            const prompt = generatePrompt(platform);
             
             const payload = {
                 contents: [{
@@ -226,11 +225,30 @@ const AdAnalyzer = () => {
                             type="password"
                             id="api-key"
                             value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
+                            onChange={handleApiKeyChange}
                             placeholder="Enter your API key here"
                             className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                         />
                     </div>
+                    
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Ad Platform</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <PlatformButton 
+                                label="Social Media" 
+                                icon={<MessageSquare className="w-5 h-5 mr-2"/>}
+                                isActive={platform === 'social'} 
+                                onClick={() => setPlatform('social')}
+                            />
+                             <PlatformButton 
+                                label="Display/Banner" 
+                                icon={<Monitor className="w-5 h-5 mr-2"/>}
+                                isActive={platform === 'display'} 
+                                onClick={() => setPlatform('display')}
+                            />
+                        </div>
+                    </div>
+
                     <div 
                         className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${isDragging ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400'}`}
                         onDrop={handleDrop}
@@ -326,6 +344,20 @@ const AdAnalyzer = () => {
         </div>
     );
 };
+
+const PlatformButton = ({ label, icon, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center justify-center w-full px-3 py-2 text-sm font-semibold border rounded-md transition-colors ${
+            isActive 
+            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+        }`}
+    >
+        {icon}
+        {label}
+    </button>
+);
 
 // --- Analysis Result Components ---
 const scoreColor = (score) => {
